@@ -1,6 +1,6 @@
 # import xlrd
 import random
-
+import copy
 
 # random.seed(100)
 # np.random.seed(100)
@@ -22,6 +22,8 @@ class Platform(object):
         self.n_task = n_task
         self.n_stacked_observation = n_stacked_observation
         self.trans = 5  # 最小转换时间
+        self.list_q = []  # 用于存放被destroy拆解下来的任务
+        self.list_f = [i + 1 for i in range(n_task)]  # 用于存放未安排的任务
         seed = 101
         random.seed(seed)  # 设置种子值使每次生成的随机数都相同  每次调用随机数都要设置相同的种子才能生成成相同的随机数
         # 因为写在了构造函数当中，所以类中每次赋值都会自动设置seed
@@ -118,6 +120,7 @@ def delete_task(platform, task_id):
     platform.target[loc][2] = platform.target[loc + 1][2]
     platform.target.pop(loc + 1)
     platform.solution.remove(task_id)
+    platform.list_q.append(task_id)  # 将删除的任务索引存到 Q列表
 
 
 # 判断插入的位置  输入对象、需要插入的任务id  即可输出可以插入的位置
@@ -147,6 +150,16 @@ def insert_location(platform, task_id):
         return -1
 
 
+def destroy_random(platform):
+    q = 6  # 每次随机移除的数量
+    New_sol = copy.deepcopy(platform.solution)
+    random.seed()  # 重置种子 使得每次随机的索引都不一样
+    remove_index = random.sample(platform.solution, q)
+    for i in remove_index:
+        delete_task(platform, i)
+    return 0
+
+
 # 解的初始化  使用贪婪启发式算法
 # 按照收益的降序和开始时间的升序进行排列，依次地尝试将每个VTW插入到当前地调度中，所有的VTW访问结束则初始化完毕
 def init_solution(platform):
@@ -156,6 +169,7 @@ def init_solution(platform):
         loc = insert_location(platform, i[0])
         if loc > 0:
             insert_task(platform, i[0], loc)
+            platform.list_f.remove(i[0])
 
 
 if __name__ == '__main__':
@@ -163,14 +177,16 @@ if __name__ == '__main__':
     num_task = 100  # 任务个数
     num_task_info = 6  # 任务属性个数
 
-    a = Platform(num_schedule, num_task, num_task_info)
-    a.produce_schedule()
-    a.produce_tasks(num_task, num_task_info)
-    print("")
-    print(a.target)
-    print(a.tasks)
-    print(a.solution)
-    init_solution(a)
-    print(a.target)
-    print(a.solution)
-    print("profits:{}".format(profits(a)))
+    Current_solution = Platform(num_schedule, num_task, num_task_info)
+    Current_solution.produce_schedule()
+    Current_solution.produce_tasks(num_task, num_task_info)
+
+    # print(a.target)
+    # print(a.tasks)
+    # print(a.solution)
+    init_solution(Current_solution)
+    New_solution = Best_solution = copy.deepcopy(Current_solution)
+    print(Current_solution.target)
+    print(Current_solution.solution)
+    print("profits:{}".format(profits(Current_solution)))
+
