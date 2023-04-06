@@ -22,8 +22,9 @@ class Platform(object):
         self.n_task = n_task
         self.n_stacked_observation = n_stacked_observation
         self.trans = 5  # 最小转换时间
-        self.list_q = []  # 用于存放被destroy拆解下来的任务
+        # self.list_q = []  # 用于存放被destroy拆解下来的任务
         self.list_f = [i + 1 for i in range(n_task)]  # 用于存放未安排的任务
+        # self.solution_info = []  # 存放解中任务的详细信息
         seed = 101
         random.seed(seed)  # 设置种子值使每次生成的随机数都相同  每次调用随机数都要设置相同的种子才能生成成相同的随机数
         # 因为写在了构造函数当中，所以类中每次赋值都会自动设置seed
@@ -120,7 +121,7 @@ def delete_task(platform, task_id):
     platform.target[loc][2] = platform.target[loc + 1][2]
     platform.target.pop(loc + 1)
     platform.solution.remove(task_id)
-    platform.list_q.append(task_id)  # 将删除的任务索引存到 Q列表
+    platform.list_f.append(task_id)  # 将删除的任务索引存到 Q列表
 
 
 # 判断插入的位置  输入对象、需要插入的任务id  即可输出可以插入的位置
@@ -150,9 +151,15 @@ def insert_location(platform, task_id):
         return -1
 
 
+# 返回解中任务的详细信息列表
+def task_info(p, l1):
+    info = []
+    for i in l1:
+        info.append(p.tasks[i - 1])
+    return info
+
+
 def destroy_random(platform):
-    q = 6  # 每次随机移除的数量
-    New_sol = copy.deepcopy(platform.solution)
     random.seed()  # 重置种子 使得每次随机的索引都不一样
     remove_index = random.sample(platform.solution, q)
     for i in remove_index:
@@ -160,11 +167,35 @@ def destroy_random(platform):
     return 0
 
 
+# 最小收益优先移除：先将解中任务排序后依次移除q个任务
+def destroy_min_profit(p: Platform):
+    task = task_info(p, p.solution)
+    count = 0
+    task = sorted(task, key=(lambda x: x[4]))  # 将解的任务列表按照利润升序排序
+    # print(task)
+    for i in task:
+        delete_task(p, i[0])
+        count += 1
+        if count == 6:
+            break
+
+
+# 冲突移除：计算解中每个任务与候选任务的冲突度，按照冲突度降序依次delete
+def destroy_max_conflict(p: Platform):
+    task1 = task_info(p, p.solution)
+    task2 = task_info(p, p.list_f)
+    conflict = conflict_degree(task1, task2)
+    conflict = sorted(conflict, key=lambda x: x[1], reverse=True)
+    print(conflict)
+    for i in range(q):
+        delete_task(p, conflict[i][0])
+    print(p.solution)
+
+
 # 解的初始化  使用贪婪启发式算法
 # 按照收益的降序和开始时间的升序进行排列，依次地尝试将每个VTW插入到当前地调度中，所有的VTW访问结束则初始化完毕
 def init_solution(platform):
     task = sorted(platform.tasks, key=(lambda x: (x[4], -x[1])), reverse=True)
-    print(task)
     for i in task:
         loc = insert_location(platform, i[0])
         if loc > 0:
@@ -172,11 +203,39 @@ def init_solution(platform):
             platform.list_f.remove(i[0])
 
 
-if __name__ == '__main__':
-    num_schedule = 1  # 调度序列的个数
-    num_task = 100  # 任务个数
-    num_task_info = 6  # 任务属性个数
+# 计算冲突度，输入两个任务列表，计算l1中每个元素与l2中元素的冲突度
+def conflict_degree(l1, l2):
+    c_d = []  # 记录l1中所有任务的冲突度情况
+    for i in l1:  # 依次计算l1中每个任务与l2中所有任务的冲突度
+        num = 0  # 冲突个数
+        length = 0  # 冲突长度总和
+        for j in l2:  # 用l1中一个任务与l2中所有任务做冲突度计算
+            con = 0
+            if i[1] < j[2] and i[2] > j[1]:  # 判断时间窗口是否有重叠？没有重叠则下一次循环
+                if i[1] < j[1]:
+                    if i[2] < j[2]:
+                        con = i[2] - j[1]
+                    else:
+                        con = j[3]
+                else:
+                    if i[2] < j[2]:
+                        con = i[2] - i[1]
+                    else:
+                        con = j[2] - i[1]
+            if con != 0:
+                num += 1
+                length += con
+        con2 = length / num
+        c_d.append([i[0], con2])
+    return c_d
 
+
+q = 6  # 任务库容量
+num_schedule = 1  # 调度序列的个数
+num_task = 100  # 任务个数
+num_task_info = 6  # 任务属性个数
+
+if __name__ == '__main__':
     Current_solution = Platform(num_schedule, num_task, num_task_info)
     Current_solution.produce_schedule()
     Current_solution.produce_tasks(num_task, num_task_info)
