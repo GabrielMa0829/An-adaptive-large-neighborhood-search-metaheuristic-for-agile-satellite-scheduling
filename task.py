@@ -2,6 +2,8 @@
 import random
 import copy
 
+import numpy as np
+
 # random.seed(100)
 # np.random.seed(100)
 
@@ -165,6 +167,7 @@ def task_info(p, l1):
     return info
 
 
+#  随机移除 编号0
 def destroy_random(platform):
     random.seed()  # 重置种子 使得每次随机的索引都不一样
     remove_index = random.sample(platform.solution, q)
@@ -173,7 +176,7 @@ def destroy_random(platform):
     return 0
 
 
-# 最小收益优先移除：先将解中任务排序后依次移除q个任务
+# 最小收益优先移除：先将解中任务排序后依次移除q个任务 编号1
 def destroy_min_profit(p: Platform):
     task = task_info(p, p.solution)
     count = 0
@@ -186,7 +189,7 @@ def destroy_min_profit(p: Platform):
             break
 
 
-# 冲突移除：计算解中每个任务与候选任务的冲突度，按照冲突度降序依次delete
+# 冲突移除：计算解中每个任务与候选任务的冲突度，按照冲突度降序依次delete  编号2
 def destroy_max_conflict(p: Platform):
     task1 = task_info(p, p.solution)
     task2 = task_info(p, p.list_f)
@@ -195,13 +198,26 @@ def destroy_max_conflict(p: Platform):
     print(conflict)
     for i in range(q):
         delete_task(p, conflict[i][0])
-    print(p.solution)
+    # print(p.solution)
 
 
+# 贪婪插入 编号0
 def repair_greedy(p: Platform):
     task = task_info(p, p.list_f)
     task = sorted(task, key=lambda x: x[4], reverse=True)
     for i in task:
+        insert_loc = insert_location(p, i[0])
+        if insert_loc > 0:
+            insert_task(p, i[0], insert_loc)
+
+
+#  最小冲突插入 编号1
+def repair_min_conflict(p: Platform):
+    task_s = task_info(p, p.solution)  # 获得解中任务的信息列表 以及候选任务的信息列表
+    task_f = task_info(p, p.list_f)
+    conflict = conflict_degree(task_f, task_s)  # 计算候选任务中的每个任务与解中任务的冲突度
+    conflict = sorted(conflict, key=lambda x: x[1])  # 冲突度升序排序
+    for i in conflict:  # 依次尝试插入 遍历完毕后即为插入成功
         insert_loc = insert_location(p, i[0])
         if insert_loc > 0:
             insert_task(p, i[0], insert_loc)
@@ -245,26 +261,62 @@ def conflict_degree(l1, l2):
     return c_d
 
 
+# 轮盘赌 选择destroy方法
+def select_destroy(p: Platform):
+    destroyRoulette = np.array(wDestroy).cumsum()  # 轮盘赌 cumsum()把列表里之前数的和加到当前列 eg. [1,2,3,4] cumsum结果为[1,3,6,10]
+    random.seed()
+    r = random.uniform(0, max(destroyRoulette))  # 随机生成 0 - 轮盘赌列表中的最大值  之间的浮点数
+    print("随机数{}".format(r))
+    for i in range(len(destroyRoulette)):
+        if r <= destroyRoulette[i]:
+            if i == 0:
+                destroy_random(p)
+            elif i == 1:
+                destroy_min_profit(p)
+            else:
+                destroy_max_conflict(p)
+            return i
+
+
+# 轮盘赌 选择repair方法
+def select_repair(p: Platform):
+    repairRoulette = np.array(wRepair).cumsum()
+    random.seed()
+    r = random.uniform(0, max(repairRoulette))
+    for i in range(len(repairRoulette)):
+        if r <= repairRoulette[i]:
+            if i == 0:
+                repair_greedy(p)
+            else:
+                repair_min_conflict(p)
+            return i
+
+
 q = 6  # 任务库容量
-num_schedule = 1  # 调度序列的个数
-num_task = 100  # 任务个数
-num_task_info = 6  # 任务属性个数
+# num_schedule = 1  # 调度序列的个数
+# num_task = 100  # 任务个数
+# num_task_info = 6  # 任务属性个数
+wDestroy = [1 for i in range(3)]  # 摧毁算子的初始权重，[1,1]
+wRepair = [1 for i in range(2)]  # 修复算子的初始权重
+destroy_use_times = [0 for i in range(3)]  # 摧毁初始次数，0
+repair_use_times = [0 for i in range(2)]  # 修复初始次数
+destroy_score = [1 for i in range(3)]  # 摧毁算子初始得分，1
+repair_score = [1 for i in range(2)]  # 修复算子初始得分
 
-if __name__ == '__main__':
-    Current_solution = Platform(num_schedule, num_task, num_task_info)
-    Current_solution.produce_schedule()
-    Current_solution.produce_tasks(num_task, num_task_info)
-
-    # print(a.target)
-    # print(a.tasks)
-    # print(a.solution)
-    init_solution(Current_solution)
-    New_solution = Best_solution = copy.deepcopy(Current_solution)
-    print(Current_solution.target)
-    print(Current_solution.solution)
-    print("profits:{}".format(profits(Current_solution)))
-    destroy_random(New_solution)
-    print(New_solution.solution)
-    repair_greedy(New_solution)
-    print(New_solution.solution)
-    print("profits:{}".format(profits(New_solution)))
+# if __name__ == '__main__':
+#     Current_solution = Platform(num_schedule, num_task, num_task_info)
+#     Current_solution.produce_schedule()
+#     Current_solution.produce_tasks(num_task, num_task_info)
+#
+#     # print(a.target)
+#     # print(a.tasks)
+#     # print(a.solution)
+#     init_solution(Current_solution)
+#     New_solution = Best_solution = copy.deepcopy(Current_solution)
+#     print(Current_solution.target)
+#     print(Current_solution.solution)
+#     print("profits:{}".format(profits(Current_solution)))
+#     destroy_random(New_solution)
+#     print(New_solution.solution)
+#     repair_min_conflict(New_solution)
+#     print("profits:{}".format(profits(New_solution)))
