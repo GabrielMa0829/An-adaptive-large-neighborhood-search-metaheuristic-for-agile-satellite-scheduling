@@ -70,7 +70,7 @@ def profits(platform):
     profit = 0
     for i in platform.solution:
         if i != 0:
-            profit += platform.tasks[i][4]
+            profit += platform.tasks[i - 1][4]
     return profit
 
 
@@ -126,6 +126,12 @@ def delete_task(platform, task_id):
 
 # 判断插入的位置  输入对象、需要插入的任务id  即可输出可以插入的位置
 def insert_location(platform, task_id):
+    """
+
+    :param platform: 对象
+    :param task_id: 任务编号
+    :return: 如果能插入返回插入的索引，否则返回-1
+    """
     vtw_start = platform.tasks[task_id - 1][1]
     vtw_end = platform.tasks[task_id - 1][2]
     available_time = 0
@@ -192,6 +198,15 @@ def destroy_max_conflict(p: Platform):
     print(p.solution)
 
 
+def repair_greedy(p: Platform):
+    task = task_info(p, p.list_f)
+    task = sorted(task, key=lambda x: x[4], reverse=True)
+    for i in task:
+        insert_loc = insert_location(p, i[0])
+        if insert_loc > 0:
+            insert_task(p, i[0], insert_loc)
+
+
 # 解的初始化  使用贪婪启发式算法
 # 按照收益的降序和开始时间的升序进行排列，依次地尝试将每个VTW插入到当前地调度中，所有的VTW访问结束则初始化完毕
 def init_solution(platform):
@@ -248,4 +263,8 @@ if __name__ == '__main__':
     print(Current_solution.target)
     print(Current_solution.solution)
     print("profits:{}".format(profits(Current_solution)))
-
+    destroy_random(New_solution)
+    print(New_solution.solution)
+    repair_greedy(New_solution)
+    print(New_solution.solution)
+    print("profits:{}".format(profits(New_solution)))
