@@ -1,8 +1,11 @@
 # import xlrd
+
+from pylab import mpl
 import random
 import copy
-
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import MultipleLocator
 from numpy import exp
 
 # random.seed(100)
@@ -326,15 +329,45 @@ def update(p1: Platform, p2: Platform, p3: Platform, destroy_index, repair_index
         else:
             destroy_score[destroy_index] += round(update_standard[3], 5)
             repair_score[repair_index] += round(update_standard[3], 5)
-    print(p1.trans)
     wDestroy[destroy_index] = round(
         (1 - b) * wDestroy[destroy_index] + b * destroy_score[destroy_index] / destroy_use_times[
             destroy_index], 5)
     wRepair[repair_index] = round((1 - b) * wRepair[repair_index] + b * repair_score[repair_index] / repair_use_times[
         repair_index], 5)
+    Best_prof.append(profit3)
+    C_prof.append(profit1)
     return p1, p2, p3  # 因为这里的赋值使用的是deepcopy 可能导致了形参和实参不能对应的问题 所以要return一下参能返回给实参
 
 
+def picture_profit():
+    mpl.rcParams["font.sans-serif"] = ["SimHei"]  # 显示中文
+    plt.title('profits')
+    plt.xlabel('迭代次数')  # 为x轴命名为“x”
+    plt.ylabel('利润')  # 为y轴命名为“y”
+    plt.xlim(0, len(Best_prof))  # 设置x轴的范围为[0,1]
+    plt.ylim(100, 200)  # 同上
+    plt.plot(range(1, len(Best_prof) + 1), Best_prof, c='red')
+    plt.plot(range(1, len(Best_prof) + 1), C_prof, c='blue')
+    x_major_locator = MultipleLocator(100)
+    # 把x轴的刻度间隔设置为1，并存在变量里
+    y_major_locator = MultipleLocator(10)
+    # 把y轴的刻度间隔设置为10，并存在变量里
+    ax = plt.gca()
+    # ax为两条坐标轴的实例
+    ax.xaxis.set_major_locator(x_major_locator)
+    # 把x轴的主刻度设置为1的倍数
+    ax.yaxis.set_major_locator(y_major_locator)
+    # 把y轴的主刻度设置为10的倍数
+    plt.legend(['最高利润', '当前利益'])  # 图例
+    plt.show()  # 显示
+
+
+num_schedule = 1  # 调度序列的个数
+num_task = 100  # 任务个数
+num_task_info = 6  # 任务属性个数
+iterx, iterxMax = 0, 10  # 初始迭代次数、最大迭代次数100
+Best_prof = []  # 最高利润
+C_prof = []  # 当前利润
 b = 0.5  # 更新权重的参数（控制权重变化速度）
 q = 6  # 任务库容量
 T = 100  # 初始温度

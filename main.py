@@ -1,10 +1,6 @@
 from task import *
 import copy
 
-num_schedule = 1  # 调度序列的个数
-num_task = 100  # 任务个数
-num_task_info = 6  # 任务属性个数
-iterx, iterxMax = 0, 100  # 初始迭代次数、最大迭代次数100
 if __name__ == '__main__':
     Current_solution = Platform(num_schedule, num_task, num_task_info)
     Current_solution.produce_schedule()
@@ -32,3 +28,7 @@ if __name__ == '__main__':
             T = Pa * T  # 温度指数下降
         iterx += 1  # 完成一次降温过程算一次迭代
         T = 100  # 完成一次降温过程算一次迭代
+    print("最优解为：{}".format(Best_solution.solution))
+    print("任务数：{}   利润为：{}    平均利润：{}".format(len(Best_solution.solution), profits(Best_solution),
+                                                        profits(Best_solution) / len(Best_solution.solution)))
+    picture_profit()
