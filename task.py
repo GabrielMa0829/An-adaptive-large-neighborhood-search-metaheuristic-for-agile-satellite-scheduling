@@ -3,6 +3,7 @@ import random
 import copy
 
 import numpy as np
+from numpy import exp
 
 # random.seed(100)
 # np.random.seed(100)
@@ -195,7 +196,7 @@ def destroy_max_conflict(p: Platform):
     task2 = task_info(p, p.list_f)
     conflict = conflict_degree(task1, task2)
     conflict = sorted(conflict, key=lambda x: x[1], reverse=True)
-    print(conflict)
+    # print(conflict)
     for i in range(q):
         delete_task(p, conflict[i][0])
     # print(p.solution)
@@ -266,7 +267,7 @@ def select_destroy(p: Platform):
     destroyRoulette = np.array(wDestroy).cumsum()  # 轮盘赌 cumsum()把列表里之前数的和加到当前列 eg. [1,2,3,4] cumsum结果为[1,3,6,10]
     random.seed()
     r = random.uniform(0, max(destroyRoulette))  # 随机生成 0 - 轮盘赌列表中的最大值  之间的浮点数
-    print("随机数{}".format(r))
+    # print("随机数{}".format(r))
     for i in range(len(destroyRoulette)):
         if r <= destroyRoulette[i]:
             if i == 0:
@@ -292,40 +293,62 @@ def select_repair(p: Platform):
             return i
 
 
-def update(p1: Platform, p2: Platform, p3: Platform, destroy_index: int, repair_index: int, T):
+def update(p1: Platform, p2: Platform, p3: Platform, destroy_index, repair_index):
     """
     根据输入的当前解和改造后的新解决定是否用新解替换当前解，并更新分数
-    :param T: 当前温度
     :param p3: 最优解
     :param p1: 当前解
     :param p2: 新解
     :param destroy_index:使用的destroy方法的索引
     :param repair_index: 使用的repair方法的索引
     """
+    destroy_use_times[destroy_index] += 1  # 对应次数+1
+    repair_use_times[repair_index] += 1
     profit1 = profits(p1)  # 当前解的利润
     profit2 = profits(p2)  # 新解的利润
     profit3 = profits(p3)  # 最优解的利润
     if profit2 >= profit1:  # 如果新解的利润大于等于当前解的利润 则 新解替换当前解
         p1 = copy.deepcopy(p2)
         if profit2 >= profit3:
+            print("New:{}  Best:{}".format(profit2, profit3))
             p3 = copy.deepcopy(p2)
-            destroy_score[destroy_index] += update_standard[0]
+            destroy_score[destroy_index] += round(update_standard[0], 5)
+            repair_score[repair_index] += round(update_standard[0], 5)
         else:
-            destroy_score[destroy_index] += update_standard[1]
-    else:  #新解利润小于当前解 利用退火算法接受准则计算 判断 是否接受该解
+            destroy_score[destroy_index] += round(update_standard[1], 5)
+            repair_score[repair_index] += round(update_standard[1], 5)
+    else:  # 新解利润小于当前解 利用退火算法接受准则计算 判断 是否接受该解
+        r = random.random()
+        if r < exp((100 / T) * (profit2 - profit1) / profit1):  # 温度越低 接受差解的概率越低
+            p1 = copy.deepcopy(p2)
+            destroy_score[destroy_index] += round(update_standard[2], 5)
+            repair_score[repair_index] += round(update_standard[2], 5)
+        else:
+            destroy_score[destroy_index] += round(update_standard[3], 5)
+            repair_score[repair_index] += round(update_standard[3], 5)
+    print(p1.trans)
+    wDestroy[destroy_index] = round(
+        (1 - b) * wDestroy[destroy_index] + b * destroy_score[destroy_index] / destroy_use_times[
+            destroy_index], 5)
+    wRepair[repair_index] = round((1 - b) * wRepair[repair_index] + b * repair_score[repair_index] / repair_use_times[
+        repair_index], 5)
+    return p1, p2, p3  # 因为这里的赋值使用的是deepcopy 可能导致了形参和实参不能对应的问题 所以要return一下参能返回给实参
 
 
+b = 0.5  # 更新权重的参数（控制权重变化速度）
 q = 6  # 任务库容量
+T = 100  # 初始温度
+Pa = 0.97  # 降温指数
 # num_schedule = 1  # 调度序列的个数
 # num_task = 100  # 任务个数
 # num_task_info = 6  # 任务属性个数
-update_standard = [30, 20, 10, 1]
-wDestroy = [1 for i in range(3)]  # 摧毁算子的初始权重，[1,1]
-wRepair = [1 for i in range(2)]  # 修复算子的初始权重
-destroy_use_times = [0 for i in range(3)]  # 摧毁初始次数，0
-repair_use_times = [0 for i in range(2)]  # 修复初始次数
-destroy_score = [1 for i in range(3)]  # 摧毁算子初始得分，1
-repair_score = [1 for i in range(2)]  # 修复算子初始得分
+update_standard = [1.5, 1.2, 0.8, 0.6]
+wDestroy = [1. for _ in range(3)]  # 摧毁算子的初始权重，[1,1]
+wRepair = [1. for _ in range(2)]  # 修复算子的初始权重
+destroy_use_times = [0 for _ in range(3)]  # 摧毁初始次数，0
+repair_use_times = [0 for _ in range(2)]  # 修复初始次数
+destroy_score = [0 for _ in range(3)]  # 摧毁算子初始得分
+repair_score = [0 for _ in range(2)]  # 修复算子初始得分
 
 # if __name__ == '__main__':
 #     Current_solution = Platform(num_schedule, num_task, num_task_info)
