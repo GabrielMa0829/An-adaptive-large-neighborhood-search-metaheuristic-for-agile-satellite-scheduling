@@ -292,10 +292,34 @@ def select_repair(p: Platform):
             return i
 
 
+def update(p1: Platform, p2: Platform, p3: Platform, destroy_index: int, repair_index: int, T):
+    """
+    根据输入的当前解和改造后的新解决定是否用新解替换当前解，并更新分数
+    :param T: 当前温度
+    :param p3: 最优解
+    :param p1: 当前解
+    :param p2: 新解
+    :param destroy_index:使用的destroy方法的索引
+    :param repair_index: 使用的repair方法的索引
+    """
+    profit1 = profits(p1)  # 当前解的利润
+    profit2 = profits(p2)  # 新解的利润
+    profit3 = profits(p3)  # 最优解的利润
+    if profit2 >= profit1:  # 如果新解的利润大于等于当前解的利润 则 新解替换当前解
+        p1 = copy.deepcopy(p2)
+        if profit2 >= profit3:
+            p3 = copy.deepcopy(p2)
+            destroy_score[destroy_index] += update_standard[0]
+        else:
+            destroy_score[destroy_index] += update_standard[1]
+    else:  #新解利润小于当前解 利用退火算法接受准则计算 判断 是否接受该解
+
+
 q = 6  # 任务库容量
 # num_schedule = 1  # 调度序列的个数
 # num_task = 100  # 任务个数
 # num_task_info = 6  # 任务属性个数
+update_standard = [30, 20, 10, 1]
 wDestroy = [1 for i in range(3)]  # 摧毁算子的初始权重，[1,1]
 wRepair = [1 for i in range(2)]  # 修复算子的初始权重
 destroy_use_times = [0 for i in range(3)]  # 摧毁初始次数，0
