@@ -94,6 +94,7 @@ def insert_task(platform, task_id, insert_loc):
     platform.target[loc + 1][1] = insert_loc + platform.tasks[task_id - 1][3]
     platform.target[loc + 1][3] = platform.target[loc + 1][2] - platform.target[loc + 1][1]
     platform.solution.insert(loc, task_id)
+    platform.list_f.remove(task_id)  # 在候选任务中删除已经安排过的任务 避免重复接受任务
     # # 插入一共分四种情况  (弃用的方法)
     # # 第一种 插入的任务在可用时间之内 不等于边界
     # if insert_loc > platform.target[loc][1] and \
@@ -123,8 +124,8 @@ def insert_task(platform, task_id, insert_loc):
 
 # 删除函数：输入待删除的任务编号
 def delete_task(platform, task_id):
-    loc = platform.solution.index(task_id)
-    platform.target[loc][2] = platform.target[loc + 1][2]
+    loc = platform.solution.index(task_id)  # 读取需要删除的任务在解中的索引
+    platform.target[loc][2] = platform.target[loc + 1][2]  # 对时间窗口进行更改
     platform.target.pop(loc + 1)
     platform.solution.remove(task_id)
     platform.list_f.append(task_id)  # 将删除的任务索引存到 Q列表
@@ -235,7 +236,7 @@ def init_solution(platform):
         loc = insert_location(platform, i[0])
         if loc > 0:
             insert_task(platform, i[0], loc)
-            platform.list_f.remove(i[0])
+            # platform.list_f.remove(i[0])
 
 
 # 计算冲突度，输入两个任务列表，计算l1中每个元素与l2中元素的冲突度
@@ -365,7 +366,7 @@ def picture_profit():
 num_schedule = 1  # 调度序列的个数
 num_task = 100  # 任务个数
 num_task_info = 6  # 任务属性个数
-iterx, iterxMax = 0, 10  # 初始迭代次数、最大迭代次数100
+iterx, iterxMax = 0, 100  # 初始迭代次数、最大迭代次数100
 Best_prof = []  # 最高利润
 C_prof = []  # 当前利润
 b = 0.5  # 更新权重的参数（控制权重变化速度）

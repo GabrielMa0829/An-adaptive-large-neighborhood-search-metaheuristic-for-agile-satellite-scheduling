@@ -31,4 +31,6 @@ if __name__ == '__main__':
     print("最优解为：{}".format(Best_solution.solution))
     print("任务数：{}   利润为：{}    平均利润：{}".format(len(Best_solution.solution), profits(Best_solution),
                                                         profits(Best_solution) / len(Best_solution.solution)))
+    print("最优解的时间窗口：{}".format(Best_solution.target))
+    print("最优解的候选任务：(未安排的任务){}".format(Best_solution.list_f))
     picture_profit()

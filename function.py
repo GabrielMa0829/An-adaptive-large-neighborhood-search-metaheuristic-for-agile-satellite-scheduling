@@ -1,7 +1,11 @@
-# from task import conflict_degree
-#
-# l1 = [[0, 2, 3, 1], [0, 2, 4, 2], [0, 5, 6, 1], [0, 6, 9, 3]]
-# l2 = [[0, 1, 6, 5], [0, 3, 8, 5], [0, 8, 9, 1]]
-# print(conflict_degree(l1, l2))
+from task import *
 
+if __name__ == "__main__":
+    Current_solution = Platform(num_schedule, num_task, num_task_info)
+    Current_solution.produce_schedule()
+    Current_solution.produce_tasks(num_task, num_task_info)
 
+    init_solution(Current_solution)  # 初始化~
+    New_solution = copy.deepcopy(Current_solution)
+    Best_solution = copy.deepcopy(Current_solution)
+    print(Current_solution.tasks)
