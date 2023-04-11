@@ -8,4 +8,8 @@ if __name__ == "__main__":
     init_solution(Current_solution)  # 初始化~
     New_solution = copy.deepcopy(Current_solution)
     Best_solution = copy.deepcopy(Current_solution)
+    print(Current_solution.list_f)
+    print(Current_solution.solution)
+    print(Current_solution.target)
     print(Current_solution.tasks)
+    print(insert_location(Current_solution, 2))

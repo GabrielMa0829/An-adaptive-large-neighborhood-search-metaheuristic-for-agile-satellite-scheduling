@@ -139,9 +139,9 @@ def insert_location(platform, task_id):
     :param task_id: 任务编号
     :return: 如果能插入返回插入的索引，否则返回-1
     """
-    vtw_start = platform.tasks[task_id - 1][1]
-    vtw_end = platform.tasks[task_id - 1][2]
-    available_time = 0
+    vtw_start = platform.tasks[task_id - 1][1]  # 任务的VTW的开始时间
+    vtw_end = platform.tasks[task_id - 1][2]  # 任务的VTW的结束时间
+    available_time = 0  # 可用的空闲时间
     loc = 0
     for i in platform.target:
         if vtw_start < i[2] and vtw_end > i[1]:
@@ -157,7 +157,8 @@ def insert_location(platform, task_id):
                     available_time = vtw_end - vtw_start
                 else:
                     available_time = i[2] - vtw_start
-            break
+            if available_time >= platform.tasks[task_id - 1][3] + platform.trans:
+                break
     if available_time >= platform.tasks[task_id - 1][3] + platform.trans:
         return loc + platform.trans
     else:
@@ -349,7 +350,7 @@ def picture_profit():
     plt.ylim(100, 200)  # 同上
     plt.plot(range(1, len(Best_prof) + 1), Best_prof, c='red')
     plt.plot(range(1, len(Best_prof) + 1), C_prof, c='blue')
-    x_major_locator = MultipleLocator(100)
+    x_major_locator = MultipleLocator(1000)
     # 把x轴的刻度间隔设置为1，并存在变量里
     y_major_locator = MultipleLocator(10)
     # 把y轴的刻度间隔设置为10，并存在变量里
@@ -364,9 +365,9 @@ def picture_profit():
 
 
 num_schedule = 1  # 调度序列的个数
-num_task = 100  # 任务个数
+num_task = 50  # 任务个数
 num_task_info = 6  # 任务属性个数
-iterx, iterxMax = 0, 100  # 初始迭代次数、最大迭代次数100
+iterx, iterxMax = 0, 200  # 初始迭代次数、最大迭代次数100
 Best_prof = []  # 最高利润
 C_prof = []  # 当前利润
 b = 0.5  # 更新权重的参数（控制权重变化速度）
