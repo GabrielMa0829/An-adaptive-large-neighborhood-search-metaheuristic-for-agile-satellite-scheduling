@@ -6,10 +6,5 @@ if __name__ == "__main__":
     Current_solution.produce_tasks(num_task, num_task_info)
 
     init_solution(Current_solution)  # 初始化~
-    New_solution = copy.deepcopy(Current_solution)
-    Best_solution = copy.deepcopy(Current_solution)
-    print(Current_solution.list_f)
-    print(Current_solution.solution)
-    print(Current_solution.target)
-    print(Current_solution.tasks)
-    print(insert_location(Current_solution, 2))
+    Current_solution.solution = [18, 22, 38, 23, 13, 8, 40, 10, 9, 46, 43, 3, 27, 31, 36, 25, 17, 12, 15, 21, 47, 2, 26]
+    print(profits(Current_solution))

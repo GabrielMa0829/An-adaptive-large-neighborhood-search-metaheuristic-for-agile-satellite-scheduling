@@ -26,6 +26,8 @@ if __name__ == '__main__':
             print(wDestroy)
             print(wRepair)
             T = Pa * T  # 温度指数下降
+        iterx_prof.append(profits(Current_solution))
+        Best_iterx_prof.append(profits(Best_solution))
         iterx += 1  # 完成一次降温过程算一次迭代
         T = 100  # 完成一次降温过程算一次迭代
     print("最优解为：{}".format(Best_solution.solution))
@@ -33,4 +35,5 @@ if __name__ == '__main__':
                                                         profits(Best_solution) / len(Best_solution.solution)))
     print("最优解的时间窗口：{}".format(Best_solution.target))
     print("最优解的候选任务：(未安排的任务){}".format(Best_solution.list_f))
+    print("性价比：{}".format(performance(Best_solution,Best_solution.solution)))
     picture_profit()

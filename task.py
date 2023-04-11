@@ -27,7 +27,7 @@ class Platform(object):
         self.n_targets = n_targets
         self.n_task = n_task
         self.n_stacked_observation = n_stacked_observation
-        self.trans = 5  # 最小转换时间
+        self.trans = 2  # 最小转换时间
         # self.list_q = []  # 用于存放被destroy拆解下来的任务
         self.list_f = [i + 1 for i in range(n_task)]  # 用于存放未安排的任务
         # self.solution_info = []  # 存放解中任务的详细信息
@@ -207,6 +207,24 @@ def destroy_max_conflict(p: Platform):
     # print(p.solution)
 
 
+def performance(p: Platform, li):
+    perf = []
+    for i in li:
+        perf2 = p.tasks[i - 1][4] / p.tasks[i - 1][3]
+        perf.append([i, perf2])
+    return perf
+
+
+# 性价比删除：优先删除最低性价比的任务  编号 3
+def destroy_performance(p: Platform):
+    perf = performance(p, p.solution)
+    perf = sorted(perf, key=(lambda x: x[1]))  # 性价比升序排序
+    print(perf)
+    for i in range(q):
+        delete_task(p, perf[i][0])
+    return 0
+
+
 # 贪婪插入 编号0
 def repair_greedy(p: Platform):
     task = task_info(p, p.list_f)
@@ -224,6 +242,16 @@ def repair_min_conflict(p: Platform):
     conflict = conflict_degree(task_f, task_s)  # 计算候选任务中的每个任务与解中任务的冲突度
     conflict = sorted(conflict, key=lambda x: x[1])  # 冲突度升序排序
     for i in conflict:  # 依次尝试插入 遍历完毕后即为插入成功
+        insert_loc = insert_location(p, i[0])
+        if insert_loc > 0:
+            insert_task(p, i[0], insert_loc)
+
+
+# 性价比插入：候选任务按照性价比降序排列 依次尝试插入即可 编号2
+def repair_performa(p: Platform):
+    perf = performance(p, p.list_f)
+    perf = sorted(perf, key=lambda x: x[1], reverse=True)
+    for i in perf:
         insert_loc = insert_location(p, i[0])
         if insert_loc > 0:
             insert_task(p, i[0], insert_loc)
@@ -279,8 +307,10 @@ def select_destroy(p: Platform):
                 destroy_random(p)
             elif i == 1:
                 destroy_min_profit(p)
-            else:
+            elif i == 2:
                 destroy_max_conflict(p)
+            else:
+                destroy_performance(p)
             return i
 
 
@@ -293,8 +323,10 @@ def select_repair(p: Platform):
         if r <= repairRoulette[i]:
             if i == 0:
                 repair_greedy(p)
-            else:
+            elif i == 1:
                 repair_min_conflict(p)
+            else:
+                repair_performa(p)
             return i
 
 
@@ -343,14 +375,36 @@ def update(p1: Platform, p2: Platform, p3: Platform, destroy_index, repair_index
 
 def picture_profit():
     mpl.rcParams["font.sans-serif"] = ["SimHei"]  # 显示中文
+    plt.figure(1, figsize=(10, 8), dpi=150)
     plt.title('profits')
     plt.xlabel('迭代次数')  # 为x轴命名为“x”
     plt.ylabel('利润')  # 为y轴命名为“y”
-    plt.xlim(0, len(Best_prof))  # 设置x轴的范围为[0,1]
+    plt.xlim(0, len(Best_prof))  # 设置x轴的范围为
     plt.ylim(100, 200)  # 同上
     plt.plot(range(1, len(Best_prof) + 1), Best_prof, c='red')
     plt.plot(range(1, len(Best_prof) + 1), C_prof, c='blue')
     x_major_locator = MultipleLocator(1000)
+    # 把x轴的刻度间隔设置为1，并存在变量里
+    y_major_locator = MultipleLocator(10)
+    # 把y轴的刻度间隔设置为10，并存在变量里
+    ax = plt.gca()
+    # ax为两条坐标轴的实例
+    ax.xaxis.set_major_locator(x_major_locator)
+    # 把x轴的主刻度设置为1的倍数
+    ax.yaxis.set_major_locator(y_major_locator)
+    # 把y轴的主刻度设置为10的倍数
+    plt.legend(['最高利润', '当前利益'])  # 图例
+    plt.show()  # 显示
+
+    plt.figure(2, figsize=(10, 8), dpi=150)
+    plt.title('iterx_prof')
+    plt.xlabel('迭代次数')  # 为x轴命名为“x”
+    plt.ylabel('每次迭代结束后的利润')  # 为y轴命名为“y”
+    plt.xlim(0, len(iterx_prof))  # 设置x轴的范围为
+    plt.ylim(100, 200)  # 同上
+    plt.plot(range(1, len(iterx_prof) + 1), Best_iterx_prof, c='red')
+    plt.plot(range(1, len(iterx_prof) + 1), iterx_prof, c='blue')
+    x_major_locator = MultipleLocator(10)
     # 把x轴的刻度间隔设置为1，并存在变量里
     y_major_locator = MultipleLocator(10)
     # 把y轴的刻度间隔设置为10，并存在变量里
@@ -368,8 +422,10 @@ num_schedule = 1  # 调度序列的个数
 num_task = 50  # 任务个数
 num_task_info = 6  # 任务属性个数
 iterx, iterxMax = 0, 200  # 初始迭代次数、最大迭代次数100
-Best_prof = []  # 最高利润
-C_prof = []  # 当前利润
+Best_prof = []  # 记录最高利润（画图用）
+C_prof = []  # 当前利润（画图用）
+iterx_prof = []  # 记录每次迭代结束后的利润（画图用）
+Best_iterx_prof = []
 b = 0.5  # 更新权重的参数（控制权重变化速度）
 q = 6  # 任务库容量
 T = 100  # 初始温度
@@ -378,12 +434,12 @@ Pa = 0.97  # 降温指数
 # num_task = 100  # 任务个数
 # num_task_info = 6  # 任务属性个数
 update_standard = [1.5, 1.2, 0.8, 0.6]
-wDestroy = [1. for _ in range(3)]  # 摧毁算子的初始权重，[1,1]
-wRepair = [1. for _ in range(2)]  # 修复算子的初始权重
-destroy_use_times = [0 for _ in range(3)]  # 摧毁初始次数，0
-repair_use_times = [0 for _ in range(2)]  # 修复初始次数
-destroy_score = [0 for _ in range(3)]  # 摧毁算子初始得分
-repair_score = [0 for _ in range(2)]  # 修复算子初始得分
+wDestroy = [1. for _ in range(4)]  # 摧毁算子的初始权重，[1,1]
+wRepair = [1. for _ in range(3)]  # 修复算子的初始权重
+destroy_use_times = [0 for _ in range(4)]  # 摧毁初始次数，0
+repair_use_times = [0 for _ in range(3)]  # 修复初始次数
+destroy_score = [0 for _ in range(4)]  # 摧毁算子初始得分
+repair_score = [0 for _ in range(3)]  # 修复算子初始得分
 
 # if __name__ == '__main__':
 #     Current_solution = Platform(num_schedule, num_task, num_task_info)
