@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MultipleLocator
 from numpy import exp
+from scipy import stats
 
 # random.seed(100)
 # np.random.seed(100)
@@ -20,7 +21,7 @@ from numpy import exp
 # n_task 任务个数  任务列表的行数
 # n_stacked_observation 任务的属性个数 人物列表的列数
 class Platform(object):
-    def __init__(self, n_targets, n_task, n_stacked_observation):
+    def __init__(self, n_targets, n_task, n_stacked_observation, random_seed):
         self.tasks = []  # 任务列表
         self.target = []  # 空余时间
         self.solution = []  # 用于存放解  调度顺序 里面存放的是任务的编号
@@ -28,11 +29,12 @@ class Platform(object):
         self.n_task = n_task
         self.n_stacked_observation = n_stacked_observation
         self.trans = 2  # 最小转换时间
+        self.sample = stats.poisson.rvs(mu=10, size=n_task, random_state=10)  # 每10到达一个任务  存储为(1,50)的列表
         # self.list_q = []  # 用于存放被destroy拆解下来的任务
         self.list_f = [i + 1 for i in range(n_task)]  # 用于存放未安排的任务
         # self.solution_info = []  # 存放解中任务的详细信息
-        seed = 101
-        random.seed(seed)  # 设置种子值使每次生成的随机数都相同  每次调用随机数都要设置相同的种子才能生成成相同的随机数
+        self.seed = random_seed
+        random.seed(self.seed)  # 设置种子值使每次生成的随机数都相同  每次调用随机数都要设置相同的种子才能生成成相同的随机数
         # 因为写在了构造函数当中，所以类中每次赋值都会自动设置seed
         # np.random.seed(seed)  #这句注释后无变化 所以就注释了
         # self.sample = stats.poisson.rvs(mu=50, size=100, random_state=10)
@@ -58,16 +60,18 @@ class Platform(object):
         self.tasks = [[0 for _ in range(n_stacked_observation)] for _ in range(n_task)]
         for i in range(n_task):
             self.tasks[i][0] = i + 1  # 任务编号
-            self.tasks[i][1] = random.randint(0, 600 * (self.n_task / 50))  # 任务开始观测时间
-            last_time = 600  # 任务持续时间  VTW长度
+            self.tasks[i][1] = random.randint(0, 600)  # 任务开始观测时间
+            last_time = 599  # 任务持续时间  VTW长度
             self.tasks[i][2] = self.tasks[i][1] + last_time  # 任务结束观测时间
-            self.tasks[i][3] = random.randint(20, 80)  # 观测时间 50s
+            self.tasks[i][3] = random.randint(10, 90)  # 观测时间 50s
             self.tasks[i][4] = random.randint(1, 10)  # 观测收益
             self.tasks[i][5] = 4  # 所占内存
+            if i == 0:
+                self.tasks[i][6] = self.sample[i]  # 任务到达时间
+            else:
+                self.tasks[i][6] = self.sample[i] + self.tasks[i - 1][6]
             # 设置random_state时，每次生成的随机数一样。不设置或为None时，多次生成的随机数不一样
-            # self.tasks[i][6] = self.sample[i]  # 任务到达时间  不管
-            # if self.tasks[i][6] > self.tasks[i][1]:
-            #     self.tasks[i][6] = self.tasks[i][1] - 1
+            self.tasks[i][1] = max(self.tasks[i][1], self.tasks[i][6])
         return self.tasks
 
 
@@ -219,7 +223,7 @@ def performance(p: Platform, li):
 def destroy_performance(p: Platform):
     perf = performance(p, p.solution)
     perf = sorted(perf, key=(lambda x: x[1]))  # 性价比升序排序
-    print(perf)
+    # print(perf)
     for i in range(q):
         delete_task(p, perf[i][0])
     return 0
@@ -347,7 +351,7 @@ def update(p1: Platform, p2: Platform, p3: Platform, destroy_index, repair_index
     if profit2 >= profit1:  # 如果新解的利润大于等于当前解的利润 则 新解替换当前解
         p1 = copy.deepcopy(p2)
         if profit2 >= profit3:
-            print("New:{}  Best:{}".format(profit2, profit3))
+            # print("New:{}  Best:{}".format(profit2, profit3))
             p3 = copy.deepcopy(p2)
             destroy_score[destroy_index] += round(update_standard[0], 5)
             repair_score[repair_index] += round(update_standard[0], 5)
@@ -371,6 +375,20 @@ def update(p1: Platform, p2: Platform, p3: Platform, destroy_index, repair_index
     Best_prof.append(profit3)
     C_prof.append(profit1)
     return p1, p2, p3  # 因为这里的赋值使用的是deepcopy 可能导致了形参和实参不能对应的问题 所以要return一下参能返回给实参
+
+
+def set_value(value, li):
+    for i in range(len(li)):
+        li[i] = value
+
+
+def reset_weight():
+    set_value(1, wDestroy)
+    set_value(1, wRepair)
+    set_value(0, destroy_use_times)
+    set_value(0, repair_use_times)
+    set_value(0, destroy_score)
+    set_value(0, repair_score)
 
 
 def picture_profit():
@@ -420,8 +438,8 @@ def picture_profit():
 
 num_schedule = 1  # 调度序列的个数
 num_task = 50  # 任务个数
-num_task_info = 6  # 任务属性个数
-iterx, iterxMax = 0, 200  # 初始迭代次数、最大迭代次数100
+num_task_info = 7  # 任务属性个数
+iterx, iterxMax = 0, 500  # 初始迭代次数、最大迭代次数
 Best_prof = []  # 记录最高利润（画图用）
 C_prof = []  # 当前利润（画图用）
 iterx_prof = []  # 记录每次迭代结束后的利润（画图用）
