@@ -43,13 +43,13 @@ class Platform(object):
 
     # 处理原始数据    调度序列
     def produce_schedule(self):
-        self.target = [[0 for _ in range(4)] for _ in range(50)]
+        self.target = [[0 for _ in range(4)] for _ in range(80)]
         # self.target = target_temp
         for i in range(1):
             t = i
             self.target[t][0] = 0  # 任务编号 若为0则此处空闲
             self.target[t][1] = 0  # 开始观测时间,将时间换为秒
-            self.target[t][2] = 1200  # 结束观测时间
+            self.target[t][2] = 2400  # 结束观测时间
             self.target[t][3] = 0  # 持续观测时间
             # self.target[t][4] = '1'  # 不用管
             # self.target[t][5] = random.randint(1,10) #收益大小
@@ -60,11 +60,11 @@ class Platform(object):
         self.tasks = [[0 for _ in range(n_stacked_observation)] for _ in range(n_task)]
         for i in range(n_task):
             self.tasks[i][0] = i + 1  # 任务编号
-            self.tasks[i][1] = random.randint(0, 600)  # 任务开始观测时间
+            self.tasks[i][1] = random.randint(0, 1800)  # 任务开始观测时间
             last_time = 599  # 任务持续时间  VTW长度
             self.tasks[i][2] = self.tasks[i][1] + last_time  # 任务结束观测时间
-            self.tasks[i][3] = random.randint(10, 90)  # 观测时间 50s
-            self.tasks[i][4] = random.randint(1, 10)  # 观测收益
+            self.tasks[i][3] = random.randint(10, 90)  # 观测时间 10~90s
+            self.tasks[i][4] = random.randint(1, 10)  # 观测收益  1~10
             self.tasks[i][5] = 4  # 所占内存
             if i == 0:
                 self.tasks[i][6] = self.sample[i]  # 任务到达时间
@@ -97,6 +97,9 @@ def insert_task(platform, task_id, insert_loc):
                                  insert_loc - platform.target[loc][1]], )
     platform.target[loc + 1][1] = insert_loc + platform.tasks[task_id - 1][3]
     platform.target[loc + 1][3] = platform.target[loc + 1][2] - platform.target[loc + 1][1]
+    if platform.target[loc][2] - platform.target[loc][1] != platform.target[loc][3] or platform.target[loc + 1][2] - \
+            platform.target[loc + 1][1] != platform.target[loc + 1][3]:
+        print("error")
     platform.solution.insert(loc, task_id)
     platform.list_f.remove(task_id)  # 在候选任务中删除已经安排过的任务 避免重复接受任务
     # # 插入一共分四种情况  (弃用的方法)
@@ -130,6 +133,7 @@ def insert_task(platform, task_id, insert_loc):
 def delete_task(platform, task_id):
     loc = platform.solution.index(task_id)  # 读取需要删除的任务在解中的索引
     platform.target[loc][2] = platform.target[loc + 1][2]  # 对时间窗口进行更改
+    platform.target[loc][3] = platform.target[loc][2] - platform.target[loc][1]
     platform.target.pop(loc + 1)
     platform.solution.remove(task_id)
     platform.list_f.append(task_id)  # 将删除的任务索引存到 Q列表
@@ -147,7 +151,7 @@ def insert_location(platform, task_id):
     vtw_end = platform.tasks[task_id - 1][2]  # 任务的VTW的结束时间
     available_time = 0  # 可用的空闲时间
     loc = 0
-    for i in platform.target:
+    for i in platform.target:  # 寻找可用时间
         if vtw_start < i[2] and vtw_end > i[1]:
             if vtw_start < i[1]:
                 loc = i[1]
@@ -161,9 +165,9 @@ def insert_location(platform, task_id):
                     available_time = vtw_end - vtw_start
                 else:
                     available_time = i[2] - vtw_start
-            if available_time >= platform.tasks[task_id - 1][3] + platform.trans:
+            if available_time >= platform.tasks[task_id - 1][3] + 2 * platform.trans:
                 break
-    if available_time >= platform.tasks[task_id - 1][3] + platform.trans:
+    if available_time >= platform.tasks[task_id - 1][3] + 2 * platform.trans:
         return loc + platform.trans
     else:
         return -1
@@ -294,7 +298,10 @@ def conflict_degree(l1, l2):
             if con != 0:
                 num += 1
                 length += con
-        con2 = length / num
+        if num != 0:
+            con2 = length / num
+        else:
+            con2 = 0
         c_d.append([i[0], con2])
     return c_d
 
@@ -398,7 +405,7 @@ def picture_profit():
     plt.xlabel('迭代次数')  # 为x轴命名为“x”
     plt.ylabel('利润')  # 为y轴命名为“y”
     plt.xlim(0, len(Best_prof))  # 设置x轴的范围为
-    plt.ylim(100, 200)  # 同上
+    plt.ylim(200, 400)  # 同上
     plt.plot(range(1, len(Best_prof) + 1), Best_prof, c='red')
     plt.plot(range(1, len(Best_prof) + 1), C_prof, c='blue')
     x_major_locator = MultipleLocator(1000)
@@ -419,7 +426,7 @@ def picture_profit():
     plt.xlabel('迭代次数')  # 为x轴命名为“x”
     plt.ylabel('每次迭代结束后的利润')  # 为y轴命名为“y”
     plt.xlim(0, len(iterx_prof))  # 设置x轴的范围为
-    plt.ylim(100, 200)  # 同上
+    plt.ylim(200, 400)  # 同上
     plt.plot(range(1, len(iterx_prof) + 1), Best_iterx_prof, c='red')
     plt.plot(range(1, len(iterx_prof) + 1), iterx_prof, c='blue')
     x_major_locator = MultipleLocator(10)
@@ -437,7 +444,7 @@ def picture_profit():
 
 
 num_schedule = 1  # 调度序列的个数
-num_task = 50  # 任务个数
+num_task = 100  # 任务个数
 num_task_info = 7  # 任务属性个数
 iterx, iterxMax = 0, 500  # 初始迭代次数、最大迭代次数
 Best_prof = []  # 记录最高利润（画图用）

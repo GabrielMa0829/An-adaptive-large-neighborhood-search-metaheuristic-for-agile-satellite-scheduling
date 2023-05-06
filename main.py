@@ -46,15 +46,14 @@ def text_save(filename, data):  # filename为写入CSV文件的路径，data为�
 
 
 def save_solution(path, solu: list):
-    sol_path = path + '\\solution'
+    sol_path = path + '\\solution.txt'
     text_save(sol_path, solu)
 
 
-path_1 = '.\\data\\EXP1'
-exp_num = 50
-repeat = 10
-profit = [[0 for _ in range(repeat + 1)] for _ in range(exp_num)]
-
+path_1 = '.\\data\\EXP_100_2400_1'  # 总的实验数据的保存位置  任务数量_时间窗口长度_序号
+exp_num = 50  # 种子数
+repeat = 5  # 每个种子重复次数
+profit = [[0. for _ in range(repeat + 1)] for _ in range(exp_num)]
 if __name__ == '__main__':
     if not os.path.exists(path_1):
         os.makedirs(path_1)
@@ -66,7 +65,7 @@ if __name__ == '__main__':
             os.makedirs(path_2)
 
         solution_list = []
-        for j in range(repeat):  # 每组任务序列执行10次
+        for j in range(repeat):  # 每个种子 重复执行 repeat 次
             print("{}-{}".format(i, j))
             solution = Platform(num_schedule, num_task, num_task_info, random_seed)
             solution.produce_schedule()
@@ -80,9 +79,9 @@ if __name__ == '__main__':
             reset_weight()
         save_solution(path_2, solution_list)
     for i in range(len(profit)):
-        profit[i][repeat] = sum(profit[i]) / repeat
+        profit[i][-1] = sum(profit[i]) / repeat
     # print(profit)
-    text_save('.\\data\\profit_data', profit)
+    text_save(path_1+'\\profit_data.txt', profit)
 
     # init_solution(Current_solution)  # 初始化~
     # New_solution = copy.deepcopy(Current_solution)
