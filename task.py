@@ -49,7 +49,7 @@ class Platform(object):
             t = i
             self.target[t][0] = 0  # 任务编号 若为0则此处空闲
             self.target[t][1] = 0  # 开始观测时间,将时间换为秒
-            self.target[t][2] = 2400  # 结束观测时间
+            self.target[t][2] = 1200  # 结束观测时间
             self.target[t][3] = 0  # 持续观测时间
             # self.target[t][4] = '1'  # 不用管
             # self.target[t][5] = random.randint(1,10) #收益大小
@@ -60,7 +60,7 @@ class Platform(object):
         self.tasks = [[0 for _ in range(n_stacked_observation)] for _ in range(n_task)]
         for i in range(n_task):
             self.tasks[i][0] = i + 1  # 任务编号
-            self.tasks[i][1] = random.randint(0, 1800)  # 任务开始观测时间
+            self.tasks[i][1] = random.randint(0, 600)  # VTW开始时间
             last_time = 599  # 任务持续时间  VTW长度
             self.tasks[i][2] = self.tasks[i][1] + last_time  # 任务结束观测时间
             self.tasks[i][3] = random.randint(10, 90)  # 观测时间 10~90s
@@ -444,7 +444,7 @@ def picture_profit():
 
 
 num_schedule = 1  # 调度序列的个数
-num_task = 100  # 任务个数
+num_task = 50  # 任务个数
 num_task_info = 7  # 任务属性个数
 iterx, iterxMax = 0, 500  # 初始迭代次数、最大迭代次数
 Best_prof = []  # 记录最高利润（画图用）

@@ -32,7 +32,7 @@ def start(Current_solution: Platform):
         c_iterx += 1  # 完成一次降温过程算一次迭代
         temp = 100  # 完成一次降温过程算一次迭代
     print('最优解的利润:{}'.format(profits(Best_solution)))
-    return profits(Best_solution), Best_solution.solution
+    return profits(Best_solution), Best_solution.solution, Best_solution.target
 
 
 def text_save(filename, data):  # filename为写入CSV文件的路径，data为要写入数据列表.
@@ -42,7 +42,7 @@ def text_save(filename, data):  # filename为写入CSV文件的路径，data为�
         s = s.replace("'", '').replace(',', '') + '\n'  # 去除单引号，逗号，每行末尾追加换行符
         file.write(s)
     file.close()
-    print("保存成功")
+    # print("{}保存成功".format(filename))
 
 
 def save_solution(path, solu: list):
@@ -50,9 +50,9 @@ def save_solution(path, solu: list):
     text_save(sol_path, solu)
 
 
-path_1 = '.\\data\\EXP_100_2400_1'  # 总的实验数据的保存位置  任务数量_时间窗口长度_序号
+path_1 = '.\\data\\EXP_50_1200_1'  # 总的实验数据的保存位置  任务数量_时间窗口长度_序号
 exp_num = 50  # 种子数
-repeat = 5  # 每个种子重复次数
+repeat = 10  # 每个种子重复次数
 profit = [[0. for _ in range(repeat + 1)] for _ in range(exp_num)]
 if __name__ == '__main__':
     if not os.path.exists(path_1):
@@ -65,23 +65,29 @@ if __name__ == '__main__':
             os.makedirs(path_2)
 
         solution_list = []
+        task_num = []
         for j in range(repeat):  # 每个种子 重复执行 repeat 次
             print("{}-{}".format(i, j))
             solution = Platform(num_schedule, num_task, num_task_info, random_seed)
             solution.produce_schedule()
             solution.produce_tasks(num_task, num_task_info)
-            pro, sol = start(solution)
+            pro, sol, target = start(solution)
+            task_num.append(len(sol))
             profit[i][j] = pro
             solution_list.append(sol)
+            if not os.path.exists(path_2 + '\\available_time'):
+                os.makedirs(path_2 + '\\available_time')
+            text_save(path_2 + '\\available_time\\available_time_{}.txt'.format(j), target)
             print("结束后的权重{}".format(wDestroy))
             del solution
             # 重置权重
             reset_weight()
-        save_solution(path_2, solution_list)
+        text_save(path_2 + '\\task_num.txt', task_num)  # 在文件中保存任务数量
+        save_solution(path_2, solution_list)  # 在文件中保存 解（任务序列）
     for i in range(len(profit)):
         profit[i][-1] = sum(profit[i]) / repeat
     # print(profit)
-    text_save(path_1+'\\profit_data.txt', profit)
+    text_save(path_1 + '\\profit_data.txt', profit)
 
     # init_solution(Current_solution)  # 初始化~
     # New_solution = copy.deepcopy(Current_solution)
