@@ -82,6 +82,7 @@ if __name__ == '__main__':
             del solution
             # 重置权重
             reset_weight()
+        task_num.append(sum(task_num)/repeat)
         text_save(path_2 + '\\task_num.txt', task_num)  # 在文件中保存任务数量
         save_solution(path_2, solution_list)  # 在文件中保存 解（任务序列）
     for i in range(len(profit)):
