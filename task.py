@@ -71,7 +71,10 @@ class Platform(object):
             else:
                 self.tasks[i][6] = self.sample[i] + self.tasks[i - 1][6]
             # 设置random_state时，每次生成的随机数一样。不设置或为None时，多次生成的随机数不一样
-            self.tasks[i][1] = max(self.tasks[i][1], self.tasks[i][6])
+        max_value = self.tasks[n_task-1][6]
+        for i in range(n_task):
+            if max_value > self.tasks[i][1]:
+                self.tasks[i][1] = max_value
         return self.tasks
 
 
